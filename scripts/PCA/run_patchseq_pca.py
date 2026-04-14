@@ -9,12 +9,12 @@ import numpy as np
 
 
 DEFAULT_DATA_PATH = Path(
-    "/Users/gwen/Desktop/20200513_Mouse_PatchSeq_Release_cpm.v2/"
+    "/.../20200513_Mouse_PatchSeq_Release_cpm.v2/"
     "20200513_Mouse_PatchSeq_Release_cpm.v2.csv"
 )
-DEFAULT_PCA_PATH = Path("/Users/gwen/Desktop/02620/pca.py")
-DEFAULT_OUTPUT_DIR = Path("/Users/gwen/Documents/New project")
-DEFAULT_METADATA_PATH = Path("/Users/gwen/Desktop/02620/20200625_patchseq_metadata_mouse.csv")
+DEFAULT_PCA_PATH = Path("/.../pca.py")
+DEFAULT_OUTPUT_DIR = Path("/.../.../")
+DEFAULT_METADATA_PATH = Path("/.../20200625_patchseq_metadata_mouse.csv")
 
 
 def parse_args():
