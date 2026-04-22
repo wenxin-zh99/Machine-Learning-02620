@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PatchSeq Cell-Type Classification — Tutorial</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8f9fa;
+      color: #212529;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: 220px;
+      min-width: 220px;
+      background: #1e2130;
+      color: #c9d1d9;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 24px 0 40px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #sidebar h2 {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #8b949e;
+      padding: 0 20px 16px;
+      border-bottom: 1px solid #30363d;
+      margin-bottom: 12px;
+    }
+
+    #sidebar nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 20px;
+      text-decoration: none;
+      color: #8b949e;
+      font-size: 13.5px;
+      transition: background 0.15s, color 0.15s;
+      border-left: 3px solid transparent;
+    }
+
+    #sidebar nav a .step-badge {
+      background: #30363d;
+      color: #8b949e;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 5px;
+      min-width: 38px;
+      text-align: center;
+      letter-spacing: 0.3px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    #sidebar nav a:hover {
+      background: #262c3a;
+      color: #e6edf3;
+    }
+
+    #sidebar nav a.active {
+      background: #1c2a3a;
+      color: #58a6ff;
+      border-left-color: #58a6ff;
+    }
+
+    #sidebar nav a.active .step-badge {
+      background: #1f4068;
+      color: #58a6ff;
+    }
+
+    /* ── Main ── */
+    #main {
+      flex: 1;
+      padding: 48px 56px;
+      max-width: 920px;
+    }
+
+    .page-title {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #0d1117;
+    }
+
+    .page-subtitle {
+      font-size: 14px;
+      color: #6e7781;
+      margin-bottom: 36px;
+    }
+
+    /* ── Step sections ── */
+    .step {
+      margin-bottom: 56px;
+      scroll-margin-top: 24px;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .step-label {
+      background: #0d419d;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .step h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0d1117;
+    }
+
+    .step p, .step li {
+      font-size: 14.5px;
+      line-height: 1.75;
+      color: #444c56;
+    }
+
+    .step ul {
+      padding-left: 22px;
+      margin: 10px 0;
+    }
+
+    /* ── Code blocks ── */
+    .code-block {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin: 16px 0;
+      overflow-x: auto;
+    }
+
+    .code-block pre {
+      font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+      font-size: 13px;
+      color: #e6edf3;
+      line-height: 1.65;
+      white-space: pre;
+    }
+
+    /* ── Output blocks ── */
+    .output-block {
+      background: #fff;
+      border: 1px solid #d0d7de;
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 8px 0 20px;
+      font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: #444c56;
+      overflow-x: auto;
+    }
+
+    /* ── Divider ── */
+    .section-divider {
+      border: none;
+      border-top: 1px solid #e1e4e8;
+      margin: 40px 0;
+    }
+
+    /* ── File tree ── */
+    .file-tree {
+      background: #f6f8fa;
+      border: 1px solid #d0d7de;
+      border-radius: 8px;
+      padding: 16px 20px;
+      font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+      font-size: 13px;
+      color: #24292f;
+      line-height: 1.7;
+      margin: 14px 0 20px;
+    }
+
+    /* ── Table ── */
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin: 16px 0;
+    }
+
+    .result-table th {
+      background: #f6f8fa;
+      border: 1px solid #d0d7de;
+      padding: 8px 12px;
+      text-align: left;
+      font-weight: 600;
+      color: #24292f;
+    }
+
+    .result-table td {
+      border: 1px solid #d0d7de;
+      padding: 7px 12px;
+      color: #444c56;
+    }
+
+    .result-table tr:nth-child(even) td { background: #f9fafb; }
+
+    .result-table td.best { background: #b6f7b6; font-weight: 600; color: #1a4d2e; }
+
+    /* ── Info callout ── */
+    .callout {
+      background: #ddf4ff;
+      border: 1px solid #79c0ff;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 13.5px;
+      color: #0550ae;
+      margin: 14px 0;
+    }
+
+    .callout strong { font-weight: 700; }
+
+    /* ── Inline code ── */
+    code {
+      background: #eef2f7;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+      font-size: 12.5px;
+      color: #c0392b;
+    }
+
+    /* ── Sub-section heading ── */
+    .step h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0d1117;
+      margin: 26px 0 10px;
+    }
+
+    /* ── Syntax colors ── */
+    .kw  { color: #ff7b72; }
+    .fn  { color: #d2a8ff; }
+    .cm  { color: #8b949e; font-style: italic; }
+    .st  { color: #a5d6ff; }
+    .nb  { color: #79c0ff; }
+    .op  { color: #e6edf3; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ SIDEBAR ══════════ -->
+<nav id="sidebar">
+  <h2>Tutorial Steps</h2>
+  <nav>
+    <a href="#step0" class="active"><span class="step-badge">Step 0</span>Imports</a>
+    <a href="#step1"><span class="step-badge">Step 1</span>Load Data</a>
+    <a href="#step2"><span class="step-badge">Step 2</span>EDA</a>
+    <a href="#step3"><span class="step-badge">Step 3</span>Train Models</a>
+    <a href="#step4"><span class="step-badge">Step 4</span>Evaluation</a>
+    <a href="#step5"><span class="step-badge">Step 5</span>Feature Analysis</a>
+    <a href="#step6"><span class="step-badge">Step 6</span>Per-Class Metrics</a>
+  </nav>
+</nav>
+
+<!-- ══════════ MAIN ══════════ -->
+<main id="main">
+
+  <div class="page-title">PatchSeq Cell-Type Classification</div>
+  <div class="page-subtitle">Full pipeline tutorial using the <code>DATE</code> class and helper modules.</div>
+
+  <!-- ── Project layout ── -->
+  <div class="file-tree">pipeline/<br>
+&nbsp;&nbsp;data.py&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#57606a">← data loading &amp; preprocessing</span><br>
+&nbsp;&nbsp;eda.py&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#57606a">← exploratory data analysis plots</span><br>
+&nbsp;&nbsp;models.py&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#57606a">← class DATE&nbsp; (perform_PCA_LR / PCA_SVM / PCA_NB / XGBoost / GGM_NB)</span><br>
+&nbsp;&nbsp;train.py&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#57606a">← CV ensemble training helpers</span><br>
+&nbsp;&nbsp;evaluate.py&nbsp;&nbsp;<span style="color:#57606a">← confusion matrices, ROC, comparison table, McNemar test</span><br>
+&nbsp;&nbsp;analysis.py&nbsp;&nbsp;<span style="color:#57606a">← XGBoost feature importance, PCA loadings heatmap</span><br>
+<br>
+ggm_nb/<br>
+&nbsp;&nbsp;model.py&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#57606a">← GGMNaiveBayes (GLasso precision matrix → exact Gaussian log-likelihood)</span><br>
+&nbsp;&nbsp;pipeline.py&nbsp;&nbsp;<span style="color:#57606a">← make_pca_ggm_nb_pipeline</span>
+  </div>
+
+  <hr class="section-divider" />
+
+  <!-- ══════════ STEP 0 ══════════ -->
+  <section class="step" id="step0">
+    <div class="step-header">
+      <span class="step-label">Step 0</span>
+      <h2>Imports</h2>
+    </div>
+    <p>Import all modules from the pipeline. Warnings are suppressed for cleaner output.</p>
+
+    <div class="code-block"><pre><span class="kw">import</span> warnings
+warnings.<span class="fn">filterwarnings</span>(<span class="st">'ignore'</span>)
+
+<span class="kw">from</span> pipeline.models <span class="kw">import</span> DATE <span class="kw">as</span> date
+<span class="kw">from</span> pipeline.eda <span class="kw">import</span> (
+    plot_cell_type_distribution,
+    plot_sparsity,
+    plot_hvg,
+    plot_umap,
+    plot_marker_heatmap,
+    plot_pca_scree,
+)
+<span class="kw">from</span> pipeline.evaluate <span class="kw">import</span> (
+    plot_confusion_matrices,
+    plot_roc_curves,
+    model_comparison_table,
+    plot_metric_bars,
+    mcnemar_test,
+)
+<span class="kw">from</span> pipeline.analysis <span class="kw">import</span> (
+    plot_xgb_feature_importance,
+    plot_pca_marker_heatmap,
+)</pre></div>
+  </section>
+
+  <hr class="section-divider" />
+
+  <!-- ══════════ STEP 1 ══════════ -->
+  <section class="step" id="step1">
+    <div class="step-header">
+      <span class="step-label">Step 1</span>
+      <h2>Load Data &amp; Create DATE Instance</h2>
+    </div>
+    <p><code>DATE</code> loads and preprocesses the dataset on construction. Choose from the following options:</p>
+    <ul>
+      <li><code>log1p=True</code> — apply <code>log(1+x)</code> to expression values before modeling</li>
+      <li><code>log1p=False</code> — keep raw CPM values</li>
+      <li><code>HVG=True</code> — keep the top <code>n_hvg</code> highly variable genes (default <code>8000</code>)</li>
+      <li><code>HVG=False</code> — keep all genes</li>
+    </ul>
+
+    <div class="code-block"><pre><span class="cm"># Option 1: log1p + top 8000 HVGs</span>
+<span class="cm"># d = date(data_dir='../data', log1p=True, HVG=True, n_hvg=8000)</span>
+
+<span class="cm"># Option 2: log1p + all genes (used below)</span>
+d = <span class="fn">date</span>(data_dir=<span class="st">'../data'</span>, log1p=<span class="nb">True</span>, HVG=<span class="nb">False</span>)
+
+<span class="cm"># Option 3: raw CPM + all genes</span>
+<span class="cm"># d = date(data_dir='../data', log1p=False, HVG=False)</span>
+
+expr_with_meta = d.<span class="fn">dataset</span>()
+<span class="fn">print</span>(<span class="st">f'Dataset shape: {expr_with_meta.shape}'</span>)
+expr_with_meta.<span class="fn">head</span>(<span class="nb">3</span>)</pre></div>
+
+    <div class="output-block">Dataset shape: (4221, 45767)
+
+                 0610005C13Rik  0610006L08Rik  ...  cell_type
+PS0810_E1-50_S88           0.0            0.0  ...        Vip
+PS0817_E1-50_S19           0.0            0.0  ...        Sst
+PS0817_E1-50_S25           0.0            0.0  ...        Sst
+
+[3 rows × 45767 columns]</div>
+  </section>
+
+  <hr class="section-divider" />
+
+  <!-- ══════════ STEP 2 ══════════ -->
+  <section class="step" id="step2">
+    <div class="step-header">
+      <span class="step-label">Step 2</span>
+      <h2>Exploratory Data Analysis</h2>
+    </div>
+    <p>Run EDA plots to understand class balance, data sparsity, marker gene expression, and PCA variance.</p>
+
+    <h3>Cell type distribution</h3>
+    <div class="code-block"><pre><span class="fn">plot_cell_type_distribution</span>(expr_with_meta)</pre></div>
+
+    <h3>Sparsity</h3>
+    <div class="code-block"><pre><span class="fn">plot_sparsity</span>(expr_with_meta)</pre></div>
+
+    <h3>Highly variable genes (optional)</h3>
+    <div class="code-block"><pre><span class="cm"># hvg_names = plot_hvg(expr_with_meta, n_hvg=8000)</span></pre></div>
+
+    <h3>UMAP (optional)</h3>
+    <div class="code-block"><pre><span class="cm"># plot_umap(expr_with_meta)</span></pre></div>
+
+    <h3>Marker gene heatmap</h3>
+    <div class="code-block"><pre><span class="fn">plot_marker_heatmap</span>(expr_with_meta)</pre></div>
+
+    <h3>PCA component selection (scree plot)</h3>
+    <div class="code-block"><pre><span class="fn">plot_pca_scree</span>(expr_with_meta, n_components=<span class="nb">200</span>, n_chosen=<span class="nb">50</span>)</pre></div>
+    <div class="callout"><strong>Tip:</strong> The scree plot helps decide how many PCs to retain. <code>n_chosen=50</code> is the default used in all downstream models.</div>
+  </section>
+
+  <hr class="section-divider" />
+
+  <!-- ══════════ STEP 3 ══════════ -->
+  <section class="step" id="step3">
+    <div class="step-header">
+      <span class="step-label">Step 3</span>
+      <h2>Train Models</h2>
+    </div>
+    <p>Each method runs <strong>3-fold donor-stratified cross-validation</strong> and returns a results dict. The held-out test set is fixed across all models (<code>random_state=42</code>).</p>
+
+    <h3>PCA + Logistic Regression</h3>
+    <div class="code-block"><pre>lr_result = d.<span class="fn">perform_PCA_LR</span>()</pre></div>
+    <div class="output-block">CV Accuracy:      ['0.9608', '0.9558', '0.9537']  |  Test Accuracy:      0.9685
+CV Balanced Acc:  ['0.9201', '0.9250', '0.9311']  |  Test Balanced Acc:  0.9608
+CV Macro F1:      ['0.9319', '0.9265', '0.9283']  |  Test Macro F1:      0.9624
+CV Macro AUC:     ['0.9978', '0.9971', '0.9970']  |  Test Macro AUC:     0.9982</div>
+
+    <h3>PCA + SVM</h3>
+    <div class="code-block"><pre>svm_result = d.<span class="fn">perform_PCA_SVM</span>()</pre></div>
+    <div class="output-block">CV Accuracy:      ['0.9598', '0.9648', '0.9698']  |  Test Accuracy:      0.9628
+CV Balanced Acc:  ['0.9168', '0.9301', '0.9443']  |  Test Balanced Acc:  0.9506
+CV Macro F1:      ['0.9327', '0.9394', '0.9502']  |  Test Macro F1:      0.9531
+CV Macro AUC:     ['0.9981', '0.9982', '0.9980']  |  Test Macro AUC:     0.9982</div>
+
+    <h3>PCA + Naive Bayes</h3>
+    <div class="code-block"><pre>nb_result = d.<span class="fn">perform_PCA_NB</span>()</pre></div>
+    <div class="output-block">CV Accuracy:      ['0.7598', '0.8101', '0.5423']  |  Test Accuracy:      0.7987
+CV Balanced Acc:  ['0.6673', '0.6960', '0.6200']  |  Test Balanced Acc:  0.7153
+CV Macro F1:      ['0.6459', '0.6716', '0.5525']  |  Test Macro F1:      0.7137
+CV Macro AUC:     ['0.9794', '0.9858', '0.9816']  |  Test Macro AUC:     0.9923</div>
+
+    <h3>XGBoost</h3>
+    <div class="code-block"><pre>xgb_result = d.<span class="fn">perform_XGBoost</span>(device=<span class="st">'cpu'</span>)</pre></div>
+    <div class="output-block">CV Accuracy:      ['0.9779', '0.9829', '0.9809']  |  Test Accuracy:      0.9709
+CV Balanced Acc:  ['0.9593', '0.9739', '0.9715']  |  Test Balanced Acc:  0.9638
+CV Macro F1:      ['0.9641', '0.9749', '0.9702']  |  Test Macro F1:      0.9628
+CV Macro AUC:     ['0.9988', '0.9993', '0.9992']  |  Test Macro AUC:     0.9988</div>
+
+    <h3>GGM-NaiveBayes</h3>
+    <div class="code-block"><pre>ggm_nb_result = d.<span class="fn">perform_GGM_NB</span>(alpha=<span class="nb">0.5</span>)</pre></div>
+    <div class="output-block">CV Accuracy:      ['0.9226', '0.9437', '0.9074']  |  Test Accuracy:      0.9297
+CV Balanced Acc:  ['0.8509', '0.9185', '0.9242']  |  Test Balanced Acc:  0.9208
+CV Macro F1:      ['0.8616', '0.9225', '0.8959']  |  Test Macro F1:      0.9210
+CV Macro AUC:     ['0.9903', '0.9958', '0.9963']  |  Test Macro AUC:     0.9966</div>
+
+    <div class="code-block"><pre>results = [lr_result, svm_result, nb_result, xgb_result, ggm_nb_result]</pre></div>
+  </section>
+
+  <hr class="section-divider" />
+
+  <!-- ══════════ STEP 4 ══════════ -->
+  <section class="step" id="step4">
+    <div class="step-header">
+      <span class="step-label">Step 4</span>
+      <h2>Evaluation</h2>
+    </div>
+    <p>Visualise and compare model performance with confusion matrices, ROC curves, and metric bar charts.</p>
+
+    <div class="code-block"><pre><span class="fn">plot_confusion_matrices</span>(results)
+<span class="fn">plot_roc_curves</span>(results)
+<span class="fn">plot_metric_bars</span>(results)</pre></div>
+
+    <h3>Model comparison table</h3>
+    <div class="code-block"><pre>table = <span class="fn">model_comparison_table</span>(results)
+num_cols = [<span class="st">'Test Acc'</span>, <span class="st">'Test Bal-Acc'</span>, <span class="st">'Test F1'</span>, <span class="st">'Test AUC'</span>]
+table.style.<span class="fn">highlight_max</span>(subset=num_cols, color=<span class="st">'#b6f7b6'</span>, axis=<span class="nb">0</span>)</pre></div>
+
+    <table class="result-table">
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Test Acc</th>
+          <th>Test Bal-Acc</th>
+          <th>Test F1</th>
+          <th>Test AUC</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>PCA+LR</td><td>0.9685</td><td>0.9608</td><td>0.9624</td><td>0.9982</td></tr>
+        <tr><td>PCA+SVM</td><td>0.9628</td><td>0.9506</td><td>0.9531</td><td>0.9982</td></tr>
+        <tr><td>PCA+NaiveBayes</td><td>0.7987</td><td>0.7153</td><td>0.7137</td><td>0.9923</td></tr>
+        <tr><td>XGBoost</td><td class="best">0.9709</td><td class="best">0.9638</td><td class="best">0.9628</td><td class="best">0.9988</td></tr>
+        <tr><td>GGM-NB</td><td>0.9297</td><td>0.9208</td><td>0.9210</td><td>0.9966</td></tr>
+      </tbody>
+    </table>
+
+    <h3>McNemar pairwise significance test</h3>
+    <div class="code-block"><pre>mc = <span class="fn">mcnemar_test</span>(results)
+mc</pre></div>
+
+    <table class="result-table">
+      <thead>
+        <tr>
+          <th>Model A</th><th>Model B</th>
+          <th>b (A✓ B✗)</th><th>c (A✗ B✓)</th>
+          <th>chi² (cc)</th><th>p-value</th>
+          <th>p_bonferroni</th><th>p_fdr_bh</th>
+          <th>sig (raw)</th><th>sig (Bonf)</th><th>sig (FDR)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>PCA+LR</td><td>PCA+SVM</td><td>16</td><td>31</td><td>4.1702</td><td>0.0411</td><td>0.2466</td><td>0.0411</td><td>True</td><td>False</td><td>True</td></tr>
+        <tr><td>PCA+LR</td><td>PCA+NaiveBayes</td><td>430</td><td>16</td><td>382.4417</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>True</td><td>True</td><td>True</td></tr>
+        <tr><td>PCA+LR</td><td>XGBoost</td><td>12</td><td>44</td><td>17.1607</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>True</td><td>True</td><td>True</td></tr>
+        <tr><td>PCA+SVM</td><td>PCA+NaiveBayes</td><td>438</td><td>9</td><td>409.8076</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>True</td><td>True</td><td>True</td></tr>
+        <tr><td>PCA+SVM</td><td>XGBoost</td><td>10</td><td>27</td><td>6.9189</td><td>0.0085</td><td>0.0510</td><td>0.0102</td><td>True</td><td>False</td><td>True</td></tr>
+        <tr><td>PCA+NaiveBayes</td><td>XGBoost</td><td>7</td><td>453</td><td>430.4891</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>True</td><td>True</td><td>True</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <hr class="section-divider" />
+
+  <!-- ══════════ STEP 5 ══════════ -->
+  <section class="step" id="step5">
+    <div class="step-header">
+      <span class="step-label">Step 5</span>
+      <h2>Feature Analysis</h2>
+    </div>
+    <p>Identify which genes drive classification using XGBoost feature importance and PCA loadings.</p>
+
+    <h3>XGBoost feature importance (top 25 genes)</h3>
+    <div class="code-block"><pre>top_genes = <span class="fn">plot_xgb_feature_importance</span>(expr_with_meta, top_n=<span class="nb">25</span>, device=<span class="st">'cuda'</span>)</pre></div>
+
+    <h3>PCA marker heatmap</h3>
+    <div class="code-block"><pre><span class="fn">plot_pca_marker_heatmap</span>(expr_with_meta)</pre></div>
+  </section>
+
+  <hr class="section-divider" />
+
+  <!-- ══════════ STEP 6 ══════════ -->
+  <section class="step" id="step6">
+    <div class="step-header">
+      <span class="step-label">Step 6</span>
+      <h2>Per-Class Precision / Recall</h2>
+    </div>
+    <p>Each result dict contains a <code>per_class</code> DataFrame with per-cell-type precision and recall on the test set.</p>
+
+    <div class="code-block"><pre><span class="kw">for</span> r <span class="kw">in</span> results:
+    <span class="fn">print</span>(<span class="st">f"\n=== {r['model_name']} ==="</span>)
+    <span class="fn">display</span>(r[<span class="st">'per_class'</span>])</pre></div>
+
+    <h3>PCA + LR</h3>
+    <table class="result-table">
+      <thead><tr><th>Cell Type</th><th>Precision</th><th>Recall</th></tr></thead>
+      <tbody>
+        <tr><td>Lamp5</td><td>0.946970</td><td>0.968992</td></tr>
+        <tr><td>Pvalb</td><td>0.955932</td><td>0.924590</td></tr>
+        <tr><td>Sncg</td><td>0.833333</td><td>0.875000</td></tr>
+        <tr><td>Sst</td><td>0.949290</td><td>0.972973</td></tr>
+        <tr><td>Vip</td><td>0.961373</td><td>0.925620</td></tr>
+      </tbody>
+    </table>
+
+    <h3>PCA + SVM</h3>
+    <table class="result-table">
+      <thead><tr><th>Cell Type</th><th>Precision</th><th>Recall</th></tr></thead>
+      <tbody>
+        <tr><td>Lamp5</td><td>0.968504</td><td>0.953488</td></tr>
+        <tr><td>Pvalb</td><td>0.959596</td><td>0.934426</td></tr>
+        <tr><td>Sncg</td><td>0.911392</td><td>0.900000</td></tr>
+        <tr><td>Sst</td><td>0.955285</td><td>0.977131</td></tr>
+        <tr><td>Vip</td><td>0.966942</td><td>0.966942</td></tr>
+      </tbody>
+    </table>
+
+    <h3>PCA + Naive Bayes</h3>
+    <table class="result-table">
+      <thead><tr><th>Cell Type</th><th>Precision</th><th>Recall</th></tr></thead>
+      <tbody>
+        <tr><td>Lamp5</td><td>0.235294</td><td>0.031008</td></tr>
+        <tr><td>Pvalb</td><td>0.892063</td><td>0.921311</td></tr>
+        <tr><td>Sncg</td><td>0.941176</td><td>0.200000</td></tr>
+        <tr><td>Sst</td><td>0.507955</td><td>0.929314</td></tr>
+        <tr><td>Vip</td><td>0.875000</td><td>0.028926</td></tr>
+      </tbody>
+    </table>
+
+    <h3>XGBoost</h3>
+    <table class="result-table">
+      <thead><tr><th>Cell Type</th><th>Precision</th><th>Recall</th></tr></thead>
+      <tbody>
+        <tr><td>Lamp5</td><td>0.984127</td><td>0.961240</td></tr>
+        <tr><td>Pvalb</td><td>0.967105</td><td>0.963934</td></tr>
+        <tr><td>Sncg</td><td>0.903614</td><td>0.937500</td></tr>
+        <tr><td>Sst</td><td>0.979253</td><td>0.981289</td></tr>
+        <tr><td>Vip</td><td>0.975207</td><td>0.975207</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<script>
+  // Highlight sidebar link for visible section
+  const sections = document.querySelectorAll('.step');
+  const navLinks = document.querySelectorAll('#sidebar nav a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`#sidebar nav a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { threshold: 0.25 });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
